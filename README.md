@@ -1,7 +1,7 @@
-docker-dns
+partkyle/docker-dns
 ==========
 
-DNS server that returns the internal docker ip addresses for running containers.
+DNS server that returns the internal docker ip addresses for running containers. There is no caching and no TTL. It is mainly meant as a development tool.
 
 Container Requirements
 ============
@@ -14,7 +14,7 @@ Example Docker Container Run
 ==========
 
 ```
-docker run --name dns -p 53:53/udp -d -v /var/run/docker.sock:/var/run/docker.sock docker-dns
+docker run --name dns -p 53:53/udp -d -v /var/run/docker.sock:/var/run/docker.sock partkyle/docker-dns
 ```
 
 OSX Tips
@@ -43,7 +43,7 @@ nameserver 192.168.99.102
 You can then run a DNS server on the boot2docker vm, binding to port 53/udp (for DNS) and mounting the docker socket.
 
 ```
-docker run --name dns -p 53:53/udp -d -v /var/run/docker.sock:/var/run/docker.sock docker-dns
+docker run --name dns -p 53:53/udp -d -v /var/run/docker.sock:/var/run/docker.sock partkyle/docker-dns
 ```
 
 You should now be able to resolve dns for anything with a ".docker" domain.
