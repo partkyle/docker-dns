@@ -16,6 +16,7 @@ import (
 var (
 	network = flag.String("net", "udp", "network type (tcp/udp)")
 	addr    = flag.String("addr", ":53", "addr to bind to")
+	domain  = flag.String("domain", ".docker.", "domain to listen for")
 )
 
 type Handler struct {
@@ -33,7 +34,7 @@ lookup:
 
 		switch question.Qtype {
 		case dns.TypeA:
-			container, err := h.docker.InspectContainer(strings.TrimSuffix(question.Name, ".docker."))
+			container, err := h.docker.InspectContainer(strings.TrimSuffix(question.Name, *domain))
 			if err != nil {
 				log.Error(err)
 				continue
@@ -95,7 +96,7 @@ lookup:
 							Class:  dns.ClassINET,
 							Ttl:    0,
 						},
-						Ptr: strings.TrimPrefix(container.Name, "/") + ".docker.",
+						Ptr: strings.TrimPrefix(container.Name, "/") + *domain,
 					}
 					answer = append(answer, ptr)
 
