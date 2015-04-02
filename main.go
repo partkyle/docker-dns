@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net"
 	"os"
 	"path"
@@ -16,11 +17,12 @@ import (
 var (
 	network = flag.String("net", "udp", "network type (tcp/udp)")
 	addr    = flag.String("addr", ":53", "addr to bind to")
-	domain  = flag.String("domain", ".docker.", "domain to listen for")
+	domain  = flag.String("domain", ".docker", "domain to listen for")
 )
 
 type Handler struct {
 	docker *docker.Client
+	domain string
 }
 
 func (h *Handler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
@@ -34,7 +36,7 @@ lookup:
 
 		switch question.Qtype {
 		case dns.TypeA:
-			container, err := h.docker.InspectContainer(strings.TrimSuffix(question.Name, *domain))
+			container, err := h.docker.InspectContainer(strings.TrimSuffix(question.Name, h.domain))
 			if err != nil {
 				log.Error(err)
 				continue
@@ -136,13 +138,12 @@ func main() {
 		}
 	}
 
-	handler := Handler{docker: client}
+	handler := Handler{docker: client, domain: fmt.Sprintf("%s.", *domain)}
 
 	server := dns.Server{}
+	server.Handler = &handler
 	server.Net = *network
 	server.Addr = *addr
-
-	dns.Handle(".", &handler)
 
 	err := server.ListenAndServe()
 	if err != nil {
