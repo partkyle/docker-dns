@@ -8,7 +8,7 @@ Container Requirements
 
 - Connection to a docker server
   - via the DOCKER_HOST https server (requires DOCKER_CERT_HOME and certs available)
-  - By mounting the docker socker over /var/run/docker.sock
+  - By mounting the docker socket over /var/run/docker.sock
 
 Example Docker Container Run
 ==========
