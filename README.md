@@ -63,3 +63,29 @@ Escape character is '^]'.
 ping
 +PONG
 ```
+
+
+It also supports rDNS lookups (though not efficiently at the moment)
+
+```
+$ dig @$(machine ip) -x $(docker inspect -f '{{.NetworkSettings.IPAddress}}' redis)
+
+; <<>> DiG 9.8.3-P1 <<>> @192.168.99.102 -x 172.17.6.92
+; (1 server found)
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 43075
+;; flags: qr rd; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0
+;; WARNING: recursion requested but not available
+
+;; QUESTION SECTION:
+;92.6.17.172.in-addr.arpa. IN  PTR
+
+;; ANSWER SECTION:
+92.6.17.172.in-addr.arpa. 0  IN  PTR redis.docker.
+
+;; Query time: 39 msec
+;; SERVER: 192.168.99.102#53(192.168.99.102)
+;; WHEN: Thu Apr  2 15:43:10 2015
+;; MSG SIZE  rcvd: 94
+```
