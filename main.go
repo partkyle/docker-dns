@@ -20,8 +20,13 @@ var (
 	domain  = flag.String("domain", ".docker", "domain to listen for")
 )
 
+type DockerClient interface {
+	InspectContainer(string) (*docker.Container, error)
+	ListContainers(docker.ListContainersOptions) ([]docker.APIContainers, error)
+}
+
 type Handler struct {
-	docker *docker.Client
+	docker DockerClient
 	domain string
 }
 
