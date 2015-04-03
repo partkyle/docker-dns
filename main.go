@@ -110,7 +110,7 @@ lookup:
 							Class:  dns.ClassINET,
 							Ttl:    0,
 						},
-						Ptr: strings.TrimPrefix(container.Name, "/") + *domain,
+						Ptr: strings.TrimPrefix(container.Name, "/") + h.domain,
 					}
 					answer = append(answer, ptr)
 

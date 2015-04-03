@@ -198,3 +198,79 @@ func TestDockerClient_MXRecords_NoResults(t *testing.T) {
 		t.Errorf("wrong number of replies; have %d, want %d", len(reply.Answer), expectedReplies)
 	}
 }
+
+func TestDockerClient_PTRRecords(t *testing.T) {
+	query := "1.0.0.127.in-addr.arpa."
+	domain := ".docker."
+
+	listener, dockerClient, _, client := setup(t, domain)
+
+	winner := "winner"
+	loser := "loser"
+
+	dockerClient.inspectContainer = func(s string) (*docker.Container, error) {
+		containers := map[string]*docker.Container{
+			"deadbeef": &docker.Container{Name: "/" + loser, NetworkSettings: &docker.NetworkSettings{IPAddress: "127.0.1.1"}},
+			"beefface": &docker.Container{Name: "/" + winner, NetworkSettings: &docker.NetworkSettings{IPAddress: "127.0.0.1"}},
+		}
+		container, ok := containers[s]
+		if !ok {
+			return nil, fmt.Errorf("Unexpected container %q", s)
+		}
+		return container, nil
+	}
+
+	dockerClient.listContainers = func(docker.ListContainersOptions) ([]docker.APIContainers, error) {
+		return []docker.APIContainers{
+			{ID: "deadbeef"},
+			{ID: "beefface"},
+		}, nil
+	}
+
+	msg := &dns.Msg{}
+	msg.Question = []dns.Question{
+		{Name: query, Qclass: dns.ClassINET, Qtype: dns.TypePTR},
+	}
+
+	reply, _, err := client.Exchange(msg, listener.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedReplies := 1
+	if len(reply.Answer) != expectedReplies {
+		t.Errorf("wrong number of replies; have %d, want %d", len(reply.Answer), expectedReplies)
+	}
+
+	for _, answer := range reply.Answer {
+		if !strings.HasSuffix(answer.String(), winner+domain) {
+			t.Errorf("did not get expected ip in %q", answer.String())
+		}
+	}
+}
+
+func TestDockerClient_PTRRecords_NoResults(t *testing.T) {
+	query := "1.0.0.127.in-addr.arpa."
+	domain := ".docker."
+
+	listener, dockerClient, _, client := setup(t, domain)
+
+	dockerClient.listContainers = func(docker.ListContainersOptions) ([]docker.APIContainers, error) {
+		return []docker.APIContainers{}, nil
+	}
+
+	msg := &dns.Msg{}
+	msg.Question = []dns.Question{
+		{Name: query, Qclass: dns.ClassINET, Qtype: dns.TypePTR},
+	}
+
+	reply, _, err := client.Exchange(msg, listener.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedReplies := 0
+	if len(reply.Answer) != expectedReplies {
+		t.Errorf("wrong number of replies; have %d, want %d", len(reply.Answer), expectedReplies)
+	}
+}
