@@ -58,6 +58,13 @@ lookup:
 
 			answer = append(answer, a)
 		case dns.TypeMX:
+			// if there is no container running, we shoudn't return a record
+			_, err := h.docker.InspectContainer(strings.TrimSuffix(question.Name, h.domain))
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+
 			mx := &dns.MX{
 				Hdr: dns.RR_Header{
 					Name:   question.Name,

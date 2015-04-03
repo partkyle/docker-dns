@@ -66,7 +66,7 @@ func TestDockerClientError(t *testing.T) {
 	listener.Close()
 }
 
-func TestDockerClient(t *testing.T) {
+func TestDockerClient_ARecords(t *testing.T) {
 
 	container := "api"
 	domain := ".docker."
@@ -97,13 +97,13 @@ func TestDockerClient(t *testing.T) {
 	}
 
 	for _, answer := range reply.Answer {
-		if !strings.Contains(answer.String(), ip) {
+		if !strings.HasSuffix(answer.String(), ip) {
 			t.Errorf("did not get expected ip in %q", answer.String())
 		}
 	}
 }
 
-func TestDockerClientNoResults(t *testing.T) {
+func TestDockerClient_ARecords_NoResults(t *testing.T) {
 	container := "api"
 	domain := ".docker."
 	ip := "127.0.0.1"
@@ -120,6 +120,72 @@ func TestDockerClientNoResults(t *testing.T) {
 	msg := &dns.Msg{}
 	msg.Question = []dns.Question{
 		{Name: "imnothere" + domain, Qclass: dns.ClassINET, Qtype: dns.TypeA},
+	}
+
+	reply, _, err := client.Exchange(msg, listener.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedReplies := 0
+	if len(reply.Answer) != expectedReplies {
+		t.Errorf("wrong number of replies; have %d, want %d", len(reply.Answer), expectedReplies)
+	}
+}
+
+func TestDockerClient_MXRecords(t *testing.T) {
+	container := "api"
+	domain := ".docker."
+	ip := "127.0.0.1"
+
+	listener, dockerClient, _, client := setup(t, domain)
+
+	dockerClient.inspectContainer = func(c string) (*docker.Container, error) {
+		if c != container {
+			return nil, fmt.Errorf("container does not exist; have %s, want %s:", c, container)
+		}
+		return &docker.Container{NetworkSettings: &docker.NetworkSettings{IPAddress: ip}}, nil
+	}
+
+	msg := &dns.Msg{}
+	msg.Question = []dns.Question{
+		{Name: container + domain, Qclass: dns.ClassINET, Qtype: dns.TypeMX},
+	}
+
+	reply, _, err := client.Exchange(msg, listener.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedReplies := 1
+	if len(reply.Answer) != expectedReplies {
+		t.Errorf("wrong number of replies; have %d, want %d", len(reply.Answer), expectedReplies)
+	}
+
+	for _, answer := range reply.Answer {
+		if !strings.HasSuffix(answer.String(), container+domain) {
+			t.Errorf("did not get expected ip in %q", answer.String())
+		}
+	}
+}
+
+func TestDockerClient_MXRecords_NoResults(t *testing.T) {
+	container := "api"
+	domain := ".docker."
+	ip := "127.0.0.1"
+
+	listener, dockerClient, _, client := setup(t, domain)
+
+	dockerClient.inspectContainer = func(c string) (*docker.Container, error) {
+		if c != container {
+			return nil, fmt.Errorf("container does not exist; have %s, want %s:", c, container)
+		}
+		return &docker.Container{NetworkSettings: &docker.NetworkSettings{IPAddress: ip}}, nil
+	}
+
+	msg := &dns.Msg{}
+	msg.Question = []dns.Question{
+		{Name: "imnothere" + domain, Qclass: dns.ClassINET, Qtype: dns.TypeMX},
 	}
 
 	reply, _, err := client.Exchange(msg, listener.Addr().String())
