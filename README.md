@@ -66,7 +66,7 @@ ping
 It also supports rDNS lookups (though not efficiently at the moment)
 
 ```
-$ dig @$(machine ip) -x $(docker inspect -f '{{.NetworkSettings.IPAddress}}' redis)
+$ dig @$(boot2docker ip) -x $(docker inspect -f '{{.NetworkSettings.IPAddress}}' redis)
 
 ; <<>> DiG 9.8.3-P1 <<>> @192.168.99.102 -x 172.17.6.92
 ; (1 server found)
@@ -117,7 +117,7 @@ Note: On OSX, you may want to change these through the network settings. To do t
 
 ```
 # list all available network interfaces
-$ sudo networksetup listallnetworkservices [2015-04-03 10:33:45]
+$ sudo networksetup listallnetworkservices
 An asterisk (*) denotes that a network service is disabled.
 Bluetooth DUN
 Display Ethernet
