@@ -25,10 +25,10 @@ If you enable routing to your DOCKER_HOST vm, you will be able to access docker 
 sudo route -n add 172.17.0.0/16 $(boot2docker ip)
 ```
 
-You can then add an entry to your /etc/resolvers:
+You can then add an entry to your /etc/resolver:
 
 ```
-sudo mkdir -p /etc/resolvers
+sudo mkdir -p /etc/resolver
 echo "nameserver $(boot2docker ip)" | sudo tee /etc/resolver/docker
 ```
 
