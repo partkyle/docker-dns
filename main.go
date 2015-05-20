@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	docker "github.com/fsouza/go-dockerclient"
 
@@ -26,8 +27,9 @@ type DockerClient interface {
 }
 
 type Handler struct {
-	docker DockerClient
-	domain string
+	docker   DockerClient
+	domain   string
+	hostname string
 }
 
 func (h *Handler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
@@ -40,6 +42,24 @@ lookup:
 		log.WithField("type", question.Qtype).WithField("name", question.Name).Info("resolving dns")
 
 		switch question.Qtype {
+		case dns.TypeSOA:
+			soa := &dns.SOA{
+				Hdr: dns.RR_Header{
+					Name:   question.Name,
+					Rrtype: dns.TypeSOA,
+					Class:  dns.ClassINET,
+					Ttl:    0,
+				},
+				Ns:      h.hostname + h.domain,
+				Mbox:    h.hostname + h.domain,
+				Serial:  uint32(time.Now().Unix()),
+				Refresh: 60,
+				Retry:   60,
+				Expire:  60,
+				Minttl:  0,
+			}
+
+			answer = append(answer, soa)
 		case dns.TypeA:
 			container, err := h.docker.InspectContainer(strings.TrimSuffix(question.Name, h.domain))
 			if err != nil {
@@ -124,7 +144,7 @@ lookup:
 
 	err := w.WriteMsg(reply)
 	if err != nil {
-		log.Error(err)
+		log.Error("WriteMsg: ", err)
 	}
 }
 
@@ -133,6 +153,11 @@ func main() {
 
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.DebugLevel)
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		log.Fatal("could not get hostname: ", err)
+	}
 
 	var client *docker.Client
 	if os.Getenv("DOCKER_HOST") != "" {
@@ -150,15 +175,15 @@ func main() {
 		}
 	}
 
-	handler := Handler{docker: client, domain: fmt.Sprintf("%s.", *domain)}
+	handler := Handler{docker: client, domain: fmt.Sprintf("%s.", *domain), hostname: hostname}
 
 	server := dns.Server{}
 	server.Handler = &handler
 	server.Net = *network
 	server.Addr = *addr
 
-	err := server.ListenAndServe()
-	if err != nil {
+	log.Println("starting")
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
 }

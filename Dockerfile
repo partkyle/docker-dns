@@ -6,4 +6,4 @@ COPY . /go/src/$PROJECT
 
 RUN go get $PROJECT && go install $PROJECT
 
-CMD docker-dns
+CMD ["docker-dns"]
