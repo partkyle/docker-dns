@@ -15,6 +15,8 @@ import (
 	"github.com/miekg/dns"
 )
 
+const VERSION = "v0.0.5"
+
 var (
 	network = flag.String("net", "udp", "network type (tcp/udp)")
 	addr    = flag.String("addr", ":53", "addr to bind to")
@@ -182,7 +184,7 @@ func main() {
 	server.Net = *network
 	server.Addr = *addr
 
-	log.Println("starting")
+	log.WithField("version", VERSION).Println("starting ")
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
