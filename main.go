@@ -15,7 +15,7 @@ import (
 	"github.com/miekg/dns"
 )
 
-const VERSION = "v0.0.5"
+const version = "v0.0.5"
 
 var (
 	network = flag.String("net", "udp", "network type (tcp/udp)")
@@ -38,30 +38,12 @@ func (h *Handler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 	reply := &dns.Msg{}
 	reply.SetReply(r)
 
-	answer := make([]dns.RR, 0)
+	var answer []dns.RR
 lookup:
 	for _, question := range r.Question {
 		log.WithField("type", question.Qtype).WithField("name", question.Name).Info("resolving dns")
 
 		switch question.Qtype {
-		case dns.TypeSOA:
-			soa := &dns.SOA{
-				Hdr: dns.RR_Header{
-					Name:   question.Name,
-					Rrtype: dns.TypeSOA,
-					Class:  dns.ClassINET,
-					Ttl:    0,
-				},
-				Ns:      h.hostname + h.domain,
-				Mbox:    h.hostname + h.domain,
-				Serial:  uint32(time.Now().Unix()),
-				Refresh: 60,
-				Retry:   60,
-				Expire:  60,
-				Minttl:  0,
-			}
-
-			answer = append(answer, soa)
 		case dns.TypeA:
 			container, err := h.docker.InspectContainer(strings.TrimSuffix(question.Name, h.domain))
 			if err != nil {
@@ -139,7 +121,34 @@ lookup:
 					continue lookup
 				}
 			}
+		case dns.TypeAAAA:
+			// no ipv6 for you. Exit early here.
+			err := w.WriteMsg(reply)
+			if err != nil {
+				log.Error("WriteMsg: ", err)
+			}
+			return
 		}
+	}
+
+	if len(answer) == 0 {
+		soa := &dns.SOA{
+			Hdr: dns.RR_Header{
+				Name:   dns.Fqdn(h.domain[1:]),
+				Rrtype: dns.TypeSOA,
+				Class:  dns.ClassINET,
+				Ttl:    5000,
+			},
+			Ns:      "master" + h.domain,
+			Mbox:    "hostmaster" + h.domain,
+			Serial:  uint32(time.Now().Unix()),
+			Refresh: 60,
+			Retry:   60,
+			Expire:  60,
+			Minttl:  0,
+		}
+
+		answer = append(answer, soa)
 	}
 
 	reply.Answer = answer
@@ -184,7 +193,7 @@ func main() {
 	server.Net = *network
 	server.Addr = *addr
 
-	log.WithField("version", VERSION).Println("starting ")
+	log.WithField("version", version).Println("starting")
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
