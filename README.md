@@ -35,7 +35,7 @@ echo "nameserver 172.17.42.1" | sudo tee /etc/resolver/docker
 You should now have a file with at `/etc/resolver/docker` with the contents, with your IP of course.
 
 ```
-nameserver 192.168.99.102
+nameserver 172.17.42.1
 ```
 
 You can then run a DNS server on the boot2docker vm, binding to port 53/udp (for DNS) and mounting the docker socket.
