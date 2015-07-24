@@ -29,7 +29,7 @@ You can then add an entry to your /etc/resolver:
 
 ```
 sudo mkdir -p /etc/resolver
-echo "nameserver $(boot2docker ip)" | sudo tee /etc/resolver/docker
+echo "nameserver 172.17.42.1" | sudo tee /etc/resolver/docker
 ```
 
 You should now have a file with at `/etc/resolver/docker` with the contents, with your IP of course.
