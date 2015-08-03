@@ -5,6 +5,7 @@ DNS server that returns the internal docker ip addresses for running containers.
 
 # Container Requirements
 
+juyst a test
 
 - Connection to a docker server
   - via the DOCKER_HOST https server (requires DOCKER_CERT_HOME and certs available)
